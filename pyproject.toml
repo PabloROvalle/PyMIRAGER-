@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jupiter-rt-retrieval"
+version = "0.4.3"
+description = "Jupiter thermal-IR radiative transfer and retrievals"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "scipy>=1.10"]
+
+[project.scripts]
+jupiter-rt = "jupiter_rt.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["jupiter_rt*"]
+
+[tool.setuptools.package-data]
+jupiter_rt = ["data/*.npy"]
