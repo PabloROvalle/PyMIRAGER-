@@ -1,4 +1,5 @@
 # PyMIRAGER
+## Python-based Multi-target InfraRed Atmospheric Giant-planet Emission Retrieval
 
 **PyMIRAGER v0.4.7** is an evolving **0.x research software package** for **Jupiter's thermal-infrared (approximately 5–20 µm) atmosphere**. It provides an LTE (local thermodynamic equilibrium) thermal-emission forward model and regularized retrievals derived from legacy Fortran calculations.
 
