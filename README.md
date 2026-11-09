@@ -57,7 +57,7 @@ python3 -u -m jupiter_rt \
   | tee log_aerosol_85_120.txt
 ```
 
-In v0.4.7, `aerosol_cutoff` enforces **`taucloud[:85] = 0` and `taucloud[120:] = 0`**, with retrieval allowed only at zero-based indices **85–119**. The independently supplied `ch4_hazes.txt` or `nh3_clouds.txt` mask still controls sensitivity in the aerosol Jacobian. `aerosol` (without fixed cutoffs) and `aerosol_legacy` are retained unchanged. These zero boundaries are **user-selected constraints**, not an explicit Fortran altitude cutoff.
+In v0.4.7, `aerosol_cutoff` enforces **`taucloud[:85] = 0` and `taucloud[120:] = 0`**, with retrieval allowed only at zero-based indices **85–119**. This will force the retrieval of a haze layer at around 20 mbar, compatible with previous results. The independently supplied `ch4_hazes.txt` or `nh3_clouds.txt` mask still controls sensitivity in the aerosol Jacobian. `aerosol` (without fixed cutoffs) and `aerosol_legacy` are retained unchanged. These zero boundaries are **user-selected constraints**, not an explicit Fortran altitude cutoff.
 
 The `temperature`, `abundance`, `abundance_split`, `hcn`, `co2`, `h2o`, `c6h6`, and `c6h6_fortran` presets are also available. Using `--preset co2` does **not** automatically select CO₂: it must already be specified in the `.fuel` file along with the correct `.pta` and `.opa` files.
 
