@@ -1,7 +1,7 @@
-# MIRAGER
-### Multi-target InfraRed Atmospheric Giant-planet Emission Retrieval
+# PyMIRAGER
+### Python-based Multi-target InfraRed Atmospheric Giant-planet Emission Retrieval
 
-**MIRAGER** is a mid-infrared atmospheric retrieval framework designed to investigate the thermal structure, chemical composition, and aerosol properties of the four Solar System giant planets: **Jupiter, Saturn, Uranus, and Neptune**.
+**PyMIRAGER** is a PYTHON BASED mid-infrared atmospheric retrieval framework designed to investigate the thermal structure, chemical composition, and aerosol properties of the four Solar System giant planets: **Jupiter, Saturn, Uranus, and Neptune**.
 
 The code is primarily developed for the analysis of thermal emission spectra acquired with the **Mid-Infrared Instrument (MIRI), Medium Resolution Spectrometer (MRS), aboard the James Webb Space Telescope (JWST)**.
 
