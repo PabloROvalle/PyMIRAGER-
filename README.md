@@ -1,27 +1,27 @@
 # PyMIRAGER
 ### Python-based Multi-target InfraRed Atmospheric Giant-planet Emission Retrieval
 
-**PyMIRAGER** is a PYTHON BASED mid-infrared atmospheric retrieval framework designed to investigate the thermal structure, chemical composition, and aerosol properties of the four Solar System giant planets: **Jupiter, Saturn, Uranus, and Neptune**.
-
-The code is primarily developed for the analysis of thermal emission spectra acquired with the **Mid-Infrared Instrument (MIRI), Medium Resolution Spectrometer (MRS), aboard the James Webb Space Telescope (JWST)**.
-
-> 🚧 **Development status: Under active development and validation.**
+🚧 **Under active development**
 
 ## Overview
 
-MIRAGER solves the radiative transfer equation under the assumption of **Local Thermodynamic Equilibrium (LTE)** to simulate the emergent thermal emission from giant-planet atmospheres in the mid-infrared spectral region.
+**PyMIRAGER** is a Python-based atmospheric retrieval framework designed to investigate the thermal structure, chemical composition, and aerosol properties of the four giant planets of the Solar System: Jupiter, Saturn, Uranus, and Neptune.
 
-By comparing synthetic spectra with observations, the framework aims to retrieve key atmospheric properties, including:
+The framework is specifically conceived for the analysis of mid-infrared thermal emission spectra acquired with the **Mid-Infrared Instrument (MIRI)** aboard the **James Webb Space Telescope (JWST)**, particularly its **Medium Resolution Spectrometer (MRS)**.
 
-- **Temperature profiles:** Vertical distributions of atmospheric temperature as a function of pressure.
-- **Molecular abundances:** Atmospheric composition and the vertical distribution of infrared-active species.
-- **Aerosol properties:** Contributions of atmospheric aerosols to the observed infrared emission spectra.
+PyMIRAGER solves the radiative transfer equation under the assumption of **Local Thermodynamic Equilibrium (LTE)**, enabling the simulation of emergent thermal emission spectra from giant-planet atmospheres.
 
-The multi-target architecture is intended to provide a consistent framework for atmospheric retrievals across the four giant planets, while accounting for their individual atmospheric characteristics.
+The retrieval framework is designed to constrain:
+
+- **Atmospheric temperature:** Vertical temperature profiles as a function of pressure.
+- **Chemical composition:** Molecular abundances and their vertical distributions.
+- **Aerosol properties:** The contribution of atmospheric aerosols to mid-infrared thermal emission spectra.
+
+Although PyMIRAGER is intended to become a multi-target retrieval framework for all four giant planets, **the current implementation is configured for Jupiter**. Future developments will extend its applicability to Saturn, Uranus, and Neptune.
 
 ## Molecular Opacity and Continuum Absorption
 
-MIRAGER incorporates molecular absorption and collision-induced absorption (CIA) processes relevant to giant-planet atmospheres.
+PyMIRAGER incorporates molecular absorption and collision-induced absorption (CIA) processes relevant to giant-planet atmospheres.
 
 **Continuum opacity:**
 - H₂–H₂ collision-induced absorption
@@ -40,34 +40,35 @@ MIRAGER incorporates molecular absorption and collision-induced absorption (CIA)
 - CO₂ — Carbon dioxide
 - H₂O — Water
 
-The radiative transfer calculations require species-specific opacity files (`.opa`), which are not included in the standard distribution and can be provided upon request.
+The radiative transfer calculations require precomputed, species-specific opacity files (`.opa`), which can be provided upon request.
 
 ## Validation and Current Development Status
 
-MIRAGER is currently undergoing testing and validation of its atmospheric retrieval capabilities.
+PyMIRAGER is currently undergoing development, testing, and validation of its atmospheric retrieval capabilities using mid-infrared observations of Jupiter.
 
 **Successfully tested:**
-- **Temperature retrievals:** The retrieval of atmospheric temperature profiles has been tested, yielding very promising results.
-- **Acetylene (C₂H₂) retrievals:** The retrieval of acetylene abundances has also been successfully tested, showing very good performance.
 
-**Ongoing validation:**
-- Retrievals of the remaining molecular species supported by the framework.
-- Implementation and testing of aerosol-related retrieval capabilities.
-- Further evaluation of retrieval performance across different atmospheric conditions and planetary targets.
+- **Temperature retrievals:** The retrieval of vertical atmospheric temperature profiles has been successfully tested, yielding very promising results.
+- **Acetylene (C₂H₂) retrievals:** The retrieval of acetylene abundances has also been successfully tested, demonstrating very good performance.
 
-The development and validation of these capabilities build upon the radiative transfer and atmospheric retrieval methodologies presented in **Rodríguez-Ovalle et al. (2024a, 2024b, 2025)**.
+**Ongoing development and validation:**
 
-Although the initial temperature and C₂H₂ retrieval tests have produced encouraging results, the remaining molecular and aerosol retrieval capabilities are still being evaluated.
+- Testing and validation of retrievals for the remaining molecular species.
+- Implementation and validation of aerosol-related retrieval capabilities.
+- Further assessment of retrieval performance under different atmospheric conditions.
+- Extension of the framework to Saturn, Uranus, and Neptune.
+
+The retrieval methodologies and ongoing developments build upon the approaches presented in **Rodríguez-Ovalle et al. (2024a, 2024b, 2025)**.
+
+While temperature and C₂H₂ retrievals have already demonstrated promising performance, the remaining molecular and aerosol retrieval capabilities are still under evaluation.
 
 ## Opacity Files and Availability
 
-MIRAGER requires precomputed opacity files (`.opa`) containing the spectroscopic information necessary for the radiative transfer calculations.
+PyMIRAGER requires precomputed opacity files (`.opa`) containing the spectroscopic information needed for the radiative transfer calculations.
 
-These files are available upon request. Users interested in obtaining the required opacity data or additional information about the framework are encouraged to contact the developer.
+These files are not included in the standard distribution but can be made available upon request.
 
 ## References
-
-The development of MIRAGER builds upon previous studies of giant-planet atmospheric retrievals using JWST/MIRI observations:
 
 1. Rodríguez-Ovalle et al. (2024a). *Temperature and Composition Disturbances in the Southern Auroral Region of Jupiter Revealed by JWST/MIRI*. Journal of Geophysical Research: Planets, 129, e2024JE008299.
 
