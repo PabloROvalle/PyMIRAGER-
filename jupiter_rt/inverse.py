@@ -188,8 +188,9 @@ def run_retrieval(model, options=None, *, progress=None):
             break
         step = retrieval_step(case.pressure, kk, case.observed, syn, case.error, params, options)
         abs_delta = float(np.max(np.abs(step.delta)))
-        # Signed relative change from the previous iteration; undefined at iter 0.
-        chi2_rel_change = ((chi - chi_old) / chi_old
+        # Fractional chi-squared improvement relative to the previous iteration.
+        # Positive values indicate a decrease in chi-squared; undefined at iter 0.
+        chi2_rel_change = ((chi_old - chi) / chi_old
                            if np.isfinite(chi_old) and chi_old != 0 else None)
         hist.append({'iteration': iteration, 'chi2_mean': chi,
                      'relative_chi2_change': chi2_rel_change,

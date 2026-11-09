@@ -44,7 +44,8 @@ def main(argv=None):
     cfg = PRESETS[a.preset]
     overrides = json.loads(a.options.read_text()) if a.options else {}
     options = options_for_preset(a.preset, overrides)
-    print(f'Preset {a.preset} | filters={options.filter_mode} | c(T)={options.c_temperature:g} | c(mol)={options.c_molecule:g} | factor={options.factor:g} | stopping={options.stop_mode}')
+    lengths = ' | '.join(f'c({param.label})={corrlength(param, options):g}' for param in params)
+    print(f'Preset {a.preset} | filters={options.filter_mode} | {lengths or "c(none)=N/A"} | factor={options.factor:g} | stopping={options.stop_mode}')
     if a.check_inputs:
         print('INPUT CHECK PASSED. No .opa files have been read or calculated.')
         return 0
@@ -64,9 +65,9 @@ def main(argv=None):
         def report_iteration(h):
             change = h['relative_chi2_change']
             change_text = 'N/A' if change is None else f'{change:+.6e}'
-            print(f"iter {h['iteration']} mean chi2 {h['chi2_mean']:.6g} "
-                  f"(chi2-old_chi2)/old_chi2 {change_text} "
-                  f"max|delta| {h['max_abs_delta']:.5g}", flush=True)
+            print(f"iter {h['iteration']:>2d} | chi2_mean={h['chi2_mean']:.6g} "
+                  f"| Δchi2/chi2_prev={change_text} "
+                  f"| max|delta|={h['max_abs_delta']:.5g}", flush=True)
 
         result = run_retrieval(model, options, progress=report_iteration)
         spec = result.synthetic

@@ -1,2 +1,2 @@
 """Jupiter thermal-IR radiative transfer and retrievals."""
-__version__ = "0.4.1"
+__version__ = "0.4.4"
