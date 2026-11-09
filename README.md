@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="assets/pymirager_logo.png"
+       alt="PyMIRAGER logo"
+       width="380">
+</p>
+
 # PyMIRAGER
 ## Python-based Multi-target InfraRed Atmospheric Giant-planet Emission Retrieval
 
