@@ -7,9 +7,65 @@ import numpy as np
 from .io import read_case, write_outputs
 from .forward import ForwardModel, parameters_for_case
 from .inverse import RetrievalOptions, run_retrieval, corrlength
+from . import __version__
 
 
-PRESETS = {'temperature': {'gaussian_width': 1.0, 'retrieval': {'filter_mode': 'none', 'c_temperature': 0.75, 'factor': 3.0, 'stop_mode': 'fortran'}}, 'abundance': {'gaussian_width': 0.925, 'retrieval': {'filter_mode': 'legacy_abundance', 'c_temperature': 3.0, 'c_molecule': 3.0, 'factor': 3.0, 'max_iterations': 20, 'rtol_chi2': 0.01, 'stop_mode': 'fortran'}}, 'abundance_split': {'gaussian_width': 0.925, 'retrieval': {'filter_mode': 'legacy_abundance', 'c_temperature': 0.75, 'c_molecule': 3.0, 'factor': 3.0, 'max_iterations': 20, 'rtol_chi2': 0.01, 'stop_mode': 'fortran'}}, 'aerosol': {'gaussian_width': 1.0, 'retrieval': {'filter_mode': 'legacy_aerosol', 'c_aerosol': 0.75, 'factor': 3.0}}, 'hcn': {'gaussian_width': 1.0, 'retrieval': {'filter_mode': 'legacy_hcn', 'c_special': 100.0, 'factor': 3.0}}, 'co2': {'gaussian_width': 1.2, 'retrieval': {'filter_mode': 'legacy_co2', 'c_special': 100.0, 'factor': 3.0}}, 'h2o': {'gaussian_width': 1.0, 'retrieval': {'filter_mode': 'legacy_h2o', 'c_special': 100.0, 'factor': 3.0}}, 'c6h6': {'gaussian_width': 0.925, 'retrieval': {'filter_mode': 'legacy_c6h6', 'c_special': 100.0, 'factor': 3.0}}, 'c6h6_fortran': {'gaussian_width': 0.925, 'retrieval': {'filter_mode': 'legacy_c6h6', 'c_temperature': 2.0, 'c_special': 2.0, 'factor': 3.0, 'rtol_chi2': 0.01, 'max_iterations': 20, 'stop_mode': 'fortran'}}, 'auto': {'gaussian_width': 0.925, 'retrieval': {'filter_mode': 'auto', 'factor': 3.0}}}
+PRESETS = {'temperature': {'gaussian_width': 1.0,
+                 'retrieval': {'filter_mode': 'none',
+                               'c_temperature': 0.75,
+                               'factor': 3.0,
+                               'stop_mode': 'fortran'}},
+ 'abundance': {'gaussian_width': 0.925,
+               'retrieval': {'filter_mode': 'legacy_abundance',
+                             'c_temperature': 3.0,
+                             'c_molecule': 3.0,
+                             'factor': 3.0,
+                             'max_iterations': 20,
+                             'rtol_chi2': 0.01,
+                             'stop_mode': 'fortran'}},
+ 'abundance_split': {'gaussian_width': 0.925,
+                     'retrieval': {'filter_mode': 'legacy_abundance',
+                                   'c_temperature': 0.75,
+                                   'c_molecule': 3.0,
+                                   'factor': 3.0,
+                                   'max_iterations': 20,
+                                   'rtol_chi2': 0.01,
+                                   'stop_mode': 'fortran'}},
+ 'aerosol': {'gaussian_width': 1.0,
+             'retrieval': {'filter_mode': 'none',
+                           'c_aerosol': 0.75,
+                           'factor': 3.0,
+                           'max_iterations': 100,
+                           'rtol_chi2': 0.01,
+                           'stop_mode': 'fortran'}},
+ 'aerosol_cutoff': {'gaussian_width': 1.0,
+                    'retrieval': {'filter_mode': 'none',
+                                  'c_aerosol': 0.75,
+                                  'factor': 3.0,
+                                  'max_iterations': 100,
+                                  'rtol_chi2': 0.01,
+                                  'stop_mode': 'fortran',
+                                  'aerosol_zero_from_index': 120,
+                                  'aerosol_zero_below_index': 85}},
+ 'aerosol_legacy': {'gaussian_width': 1.0,
+                    'retrieval': {'filter_mode': 'legacy_aerosol', 'c_aerosol': 0.75, 'factor': 3.0}},
+ 'hcn': {'gaussian_width': 1.0,
+         'retrieval': {'filter_mode': 'legacy_hcn', 'c_special': 100.0, 'factor': 3.0}},
+ 'co2': {'gaussian_width': 1.2,
+         'retrieval': {'filter_mode': 'legacy_co2', 'c_special': 100.0, 'factor': 3.0}},
+ 'h2o': {'gaussian_width': 1.0,
+         'retrieval': {'filter_mode': 'legacy_h2o', 'c_special': 100.0, 'factor': 3.0}},
+ 'c6h6': {'gaussian_width': 0.925,
+          'retrieval': {'filter_mode': 'legacy_c6h6', 'c_special': 100.0, 'factor': 3.0}},
+ 'c6h6_fortran': {'gaussian_width': 0.925,
+                  'retrieval': {'filter_mode': 'legacy_c6h6',
+                                'c_temperature': 2.0,
+                                'c_special': 2.0,
+                                'factor': 3.0,
+                                'rtol_chi2': 0.01,
+                                'max_iterations': 20,
+                                'stop_mode': 'fortran'}},
+ 'auto': {'gaussian_width': 0.925, 'retrieval': {'filter_mode': 'auto', 'factor': 3.0}}}
 
 def options_for_preset(preset, overrides=None):
     config = dict(PRESETS[preset]['retrieval'])
@@ -19,6 +75,7 @@ def options_for_preset(preset, overrides=None):
 
 def parser():
     p = argparse.ArgumentParser(description='Jupiter thermal IR radiative transfer and retrievals (5-20 um)')
+    p.add_argument('--version', action='version', version=f'PyMIRAGER {__version__}')
     p.add_argument('--case', type=Path, required=True, help='Folder containing .fuel, .pta, .spe, resolution.txt and corrch4.txt')
     p.add_argument('--opacity-dir', type=Path, help='Folder containing jupiter_ch4_<gas>.opa')
     p.add_argument('--output', type=Path, default=Path('resultados_python'))
@@ -45,7 +102,11 @@ def main(argv=None):
     overrides = json.loads(a.options.read_text()) if a.options else {}
     options = options_for_preset(a.preset, overrides)
     lengths = ' | '.join(f'c({param.label})={corrlength(param, options):g}' for param in params)
-    print(f'Preset {a.preset} | filters={options.filter_mode} | {lengths or "c(none)=N/A"} | factor={options.factor:g} | stopping={options.stop_mode}')
+    lower_label = (f' | tau_zero_below_index={options.aerosol_zero_below_index}'
+                   if options.aerosol_zero_below_index is not None else '')
+    cutoff_label = (f' | tau_zero_from_index={options.aerosol_zero_from_index}'
+                    if options.aerosol_zero_from_index is not None else '')
+    print(f'Preset {a.preset} | filters={options.filter_mode} | {lengths or "c(none)=N/A"} | factor={options.factor:g} | stopping={options.stop_mode}{lower_label}{cutoff_label}')
     if a.check_inputs:
         print('INPUT CHECK PASSED. No .opa files have been read or calculated.')
         return 0
@@ -78,6 +139,6 @@ def main(argv=None):
         niter = result.iterations
     write_outputs(case, params, spec, sigma, ak, dr, chi2, niter, a.output)
     if result is not None:
-        (a.output / 'diagnostics.json').write_text(json.dumps({'chi2_mean': float(result.chi2), 'iterations': result.iterations, 'parameters': [p.label for p in params], 'correlation_length': [float(corrlength(p, options)) for p in params], 'filters': options.filter_mode, 'molecular_jacobian': a.jacobian, 'history': result.history}, indent=2, ensure_ascii=False))
+        (a.output / 'diagnostics.json').write_text(json.dumps({'software_version': __version__, 'preset': a.preset, 'chi2_mean': float(result.chi2), 'iterations': result.iterations, 'parameters': [p.label for p in params], 'correlation_length': [float(corrlength(p, options)) for p in params], 'filters': options.filter_mode, 'aerosol_zero_from_index': options.aerosol_zero_from_index, 'aerosol_zero_below_index': options.aerosol_zero_below_index, 'molecular_jacobian': a.jacobian, 'history': result.history}, indent=2, ensure_ascii=False))
     print(f'Results written to {a.output}; mean chi2 = {chi2:.6g}')
     return 0

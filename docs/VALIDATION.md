@@ -1,7 +1,7 @@
 # Scientific Validation Status — Python versus Fortran
 
-**Documented software:** Jupiter RT Python v0.4.4.  
-**Status as of:** November 9, 2026.
+**Documented software:** PyMIRAGER / jupiter_rt v0.4.7.  
+**Status as of:** November 10, 2026.
 
 ## 1. Comparison principles
 
@@ -90,7 +90,7 @@ The correctly matched Fortran `00-01` case was compared with its corresponding P
 
 The relative difference in mean χ² is approximately **0.79%**. The maximum difference between synthetic spectra was about **1.32 × 10⁻¹¹**, corresponding to **0.0085 times** the relevant observational uncertainty. The temperature RMS difference was about **0.216 K**, with a maximum difference of approximately **0.814 K**.
 
-**Caveat:** The retrieved C₆H₆ VMR profiles exhibited noticeable vertical differences (factors of two or three in some regions), despite excellent spectral agreement. According to the comparison of the configurations, the runs used **different regularization values**, so these discrepancies should not be attributed to an implementation error. The scientific decision was to **keep v0.4.4 unchanged**.
+**Caveat:** The retrieved C₆H₆ VMR profiles exhibited noticeable vertical differences (factors of two or three in some regions), despite excellent spectral agreement. According to the comparison of the configurations, the runs used **different regularization values**, so these discrepancies should not be attributed to an implementation error. The scientific decision was to **retain the validated physical treatment unchanged**.
 
 This result supports operation of the C₆H₆ forward model and special-molecule retrieval path. It **should not be presented as an exact profile-by-profile Fortran reproduction under identical mathematical settings**.
 
@@ -115,18 +115,85 @@ CO₂ was compared with a historical Fortran retrieval using **361 atmospheric l
 
 The Fortran and Python temperature and CO₂ DOFS were also similar (roughly 0.92 and 0.91, respectively). This is **good agreement for the shared special-molecule calculation and the stratospheric CO₂ profile**, not a claim of exact equivalence of every posterior quantity. The temperature regularization, special-molecule regularization, vertical filter widths, and observational errors differ between the historical runs. Some Fortran uncertainty outputs contained non-finite values, so the posterior error estimates are not yet fully cross-validated.
 
-## 8. Aerosols and remaining special molecules
+## 8. Grey aerosol retrieval: Fortran comparison and fixed-band tests
+
+The aerosol radiative-transfer model treats aerosols as **grey absorption-only
+layer optical depths in LTE**, with **no scattering**. `taucloud` is initialized
+to zero; a file such as `ch4_hazes.txt` supplies the vertical Jacobian mask,
+not the initial opacity. The Fortran reference clips negative layer opacities
+after updating; the optional Python fixed-zero band is an **additional user-
+selected constraint**, not a literal Fortran source-code rule.
+
+The reference case comprised **361 pressure levels**, **10 spectral samples**
+near **700.17–701.27 cm⁻¹**, and a grey-aerosol retrieval. Recorded results:
+
+| Metric | Fortran reference | Python with upper cutoff 120 (v0.4.5) | Python with allowed indices 80–119 (v0.4.6) |
+|---|---:|---:|---:|
+| Mean χ² | ≈ 8.4977 | ≈ 6.696816 | **≈ 6.696821** |
+| Retrieval iterations | 55 | 3 | **3** |
+| Aerosol DOFS | ≈ 0.908 | ≈ 0.907569 | **≈ 0.907569** |
+| Index of peak optical depth (zero-based) | 115 | 115 | **115** |
+| Maximum layer optical depth | ≈ 1.69 × 10⁻⁴ | ≈ 1.97 × 10⁻⁴ | **≈ 1.967 × 10⁻⁴** |
+| Sum of layer optical depths, Στ | **≈ 0.002800** | ≈ 0.004252 | **≈ 0.004221** |
+
+For the tested dual-boundary configuration, integrated layer optical depth
+is approximately **50.8% higher than Fortran**. It should not be described
+as a bit-for-bit reproduction. Despite the approximately 0.72% change in
+integrated optical depth between Python one-cutoff and two-cutoff runs,
+their spectra differed by less than about **0.00016 measurement σ** in the
+reported test. The peak location remained the same. The vertical Jacobian
+mask for the experiment was active over levels **109–129**, intersecting the
+80–119 band at **109–119**. The tests support the operational retrieval and
+its overall spectral/vertical behavior, with case-specific differences in
+total opacity and iteration count.
+
+**v0.4.7 change requiring new scientific verification:** the lower aerosol
+cutoff is now **85** (allowed indices **85–119**, forbidden **0–84** and
+**120–360**). We tested that the code enforces the new boundary, but the
+results in this table are from the **80–119** configuration. A complete
+retrieval with the external reference opacities for **85–119** has **not**
+been carried out in this release preparation. No v0.4.7 χ², DOFS, or
+integrated aerosol optical depth is asserted here.
+
+For optical-depth interpretation, the physical total used by the model is
+**Σₖ τcloud[k]**, since `taucloud[k]` is already the optical depth of
+an atmospheric layer; do **not** multiply it again by a pressure step.
+Pressure-dependent cumulative optical depth is the sum of layers up to
+the selected pressure level. A separate ∫τ(p)dp can be plotted as a
+vertical-profile diagnostic but is **not** the modeled total optical depth.
+
+## 9. Other special molecules
 
 | Component | Current status | Remaining validation |
 |---|---|---|
-| Aerosols | Legacy retrieval treatment preserved; initial aerosol profile is zero. | End-to-end Fortran comparison, including masks, spectra, retrieved opacity, and averaging kernels. |
-| HCN | Shared special-molecule infrastructure tested indirectly through CO₂; HCN not tested individually. | Validate HCN opacity data, spectral interval, and case-specific settings if needed. |
-| H₂O | Shared special-molecule infrastructure tested indirectly through CO₂; H₂O not tested individually. | Validate H₂O opacity data, spectral interval, and case-specific settings if needed. |
+| HCN | Implemented via the shared special-molecule pathway; no independent full HCN comparison completed. | Validate HCN opacity files, spectral region and retrieval-specific behavior. |
+| H₂O | Implemented via the shared special-molecule pathway; no independent full H₂O comparison completed. | Validate H₂O opacity files, spectral region and retrieval-specific behavior. |
 
-The **main remaining retrieval family to test is aerosols**. HCN and H₂O are intentionally deferred individual checks, not separately validated cases. The original Fortran sources for both molecules have also been inspected: they apply `profil(:,7) *= 1` to the special-molecule profile and do not multiply observational errors. Their only prior scaling consists of the shared `.fuel` factors and the first-gas `1.166667` correction. This supports the current Python input-scaling convention for HCN and H₂O but **does not replace full numerical tests** of their opacity files and retrievals.
+The original Fortran sources were inspected for these cases: HCN and H₂O
+applied `profil(:,7) *= 1` and did not multiply observational uncertainties.
+Their scale factors therefore agree with the present Python convention.
+That source-level check **is not equivalent** to full forward and inverse
+numerical validation for HCN or H₂O.
 
-A complete forward-model finite-difference Jacobian test and exports of full averaging-kernel matrices are possible future refinements, not changes introduced in v0.4.4.
+## 10. Scope, limits and pending scientific extensions
 
-## 9. Limits of the validation claims
+This `0.x` project is specifically a **Jupiter LTE thermal-infrared** model
+for the included Jupiter reference molecule/opacity conventions and **grey
+absorption-only aerosols**. New planets, new molecular species or opacity
+systems, non-LTE transfer, aerosol scattering, and wavelength-dependent
+aerosol extinction are not validated or implemented. They are **possible
+future developments**.
 
-These results represent specific test cases, not a general reproducibility certificate for every latitude, species, instrumental resolution, or thermodynamic range. For scientific publications, retain the code version and retrieval parameters, and rerun the relevant comparisons using the actual inputs and numerical precision of the intended analysis.
+The comparison cases described in this document do not certify all
+latitudes, temperatures, spectral resolutions, species, observation
+geometries, pressure grids or posterior errors. The historical Fortran
+runs sometimes used different filters, measurement-error scaling or
+regularization, so similar spectra or DOFS do not establish identical
+vertical retrievals.
+
+A complete forward-model finite-difference Jacobian benchmark and exports
+and comparison of full averaging-kernel matrices remain possible future
+refinements. For scientific publications, record the source version,
+case input files, external opacity tables and their provenance, mask,
+regularization settings, Jacobian choice, spectral range and Fortran
+reference configuration.

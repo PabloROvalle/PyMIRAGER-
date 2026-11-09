@@ -1,6 +1,6 @@
 # Input Data Formats, Scaling Factors, and Output Files
 
-**Version:** Jupiter RT Python 0.4.4. This document describes the format **implemented by the current input reader**, not a generic specification for every historical Fortran input file.
+**Version:** PyMIRAGER / jupiter_rt 0.4.7. This document describes the format **implemented by the current input reader**, not a generic specification for every historical Fortran input file.
 
 ## 1. Case directory layout
 
@@ -84,7 +84,7 @@ P | T | ch5 | ch3e | nh3 | ph3 | c2h3 | c2h6 | c6h6
 
 **Permanent rule:** there is NO aerosol column. For HCN, CO₂, H₂O, and C₆H₆, **the final column contains that molecule's VMR**.
 
-For backward compatibility, v0.4.4 accepts one extra trailing column consisting entirely of zeros **only for cases without a special molecule**. That extra column is ignored; it is never interpreted as aerosol optical depth.
+For backward compatibility, v0.4.7 accepts one extra trailing column consisting entirely of zeros **only for cases without a special molecule**. That extra column is ignored; it is never interpreted as aerosol optical depth.
 
 ### Input scaling rules
 
@@ -166,8 +166,20 @@ One row per atmospheric level (1–361) and one column per retrieval parameter, 
 
 ### `diagnostics.json`
 
-Contains `chi2_mean`, `iterations`, `parameters`, `correlation_length`, `filters`, `molecular_jacobian`, and iteration `history`. The field `relative_chi2_change` stores `(previous_chi2 - current_chi2) / previous_chi2`: positive values indicate an improvement (chi-squared decreased); negative values indicate deterioration. Its first value is `null` (reported as `N/A` on screen). This field changed sign in v0.4.4; the retrieval stopping criterion did not change.
+Contains `software_version`, `preset`, `aerosol_zero_below_index`, `aerosol_zero_from_index`, `chi2_mean`, `iterations`, `parameters`, `correlation_length`, `filters`, `molecular_jacobian`, and iteration `history`. The field `relative_chi2_change` stores `(previous_chi2 - current_chi2) / previous_chi2`: positive values indicate an improvement (chi-squared decreased); negative values indicate deterioration. Its first value is `null` (reported as `N/A` on screen). This field changed sign in v0.4.4; the retrieval stopping criterion did not change.
 
 ## 9. Checklist for Python–Fortran comparisons
 
 For **both runs**, verify: input case, number of spectral samples, spectral interval, gases and flags, a priori profile, scale factors, preset, `c_*` and `factor`, vertical filters, Jacobians, stopping criterion, and software version. Similar χ² values **do not imply** identical retrieved vertical profiles when the regularization settings differ.
+
+### Experimental aerosol cutoff settings
+
+The `aerosol_cutoff` preset fixes aerosol optical depth to zero at zero-based
+indices 0–84 and 120–360 (allowed 85–119), via
+`aerosol_zero_below_index=85` and `aerosol_zero_from_index=120`.
+These options constrain the retrieved `taucloud` and its Jacobian, not any
+input `.pta` column. The `ch4_hazes.txt` mask remains in effect.
+
+## 10. Scientific domain and future extensions
+
+The data reader and opacity assumptions are specific to **Jupiter's 361-level LTE thermal-emission cases**. The source-format acceptance of a gas identifier does not imply scientific validation for an arbitrary molecule or another planet. Aerosols are **grey absorbers without scattering**; their `taucloud` values are **per-layer optical depths**, so a vertical sum is their model optical depth. Non-LTE transfer, aerosol spectral dependence, other planets, and extra species are **not implemented** in v0.4.7.

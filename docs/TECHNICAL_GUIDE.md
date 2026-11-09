@@ -1,10 +1,10 @@
 # Jupiter RT Python — Technical Guide
 
-**Documented version:** 0.4.4  
-**Project status:** Operational modular Python implementation, with ongoing validation against the original Fortran programs.  
-**Documentation cutoff:** November 9, 2026.
+**Documented version:** 0.4.7  
+**Project status:** Jupiter-only 0.x scientific research software; specific Fortran cases validated, others remain outside the tested scope.  
+**Documentation cutoff:** November 10, 2026.
 
-> This guide complements the repository's introductory `README.md`; it does not replace it. It describes features implemented in v0.4.4, rather than treating planned features as already available.
+> This guide complements the repository's introductory `README.md`; it does not replace it. It documents implemented **v0.4.7** features and distinguishes them from future development plans.
 
 ## Contents
 
@@ -25,9 +25,11 @@ See also the [input/output file format reference](FILE_FORMATS.md) and the [scie
 
 ## 1. Purpose and scope
 
-`jupiter_rt` is a **pure-Python** implementation of a thermal-infrared emission model and atmospheric-profile retrieval system for Jupiter, derived from several original Fortran programs. It supports retrievals of temperature, molecular abundances, aerosols, and selected trace species, while preserving legacy configuration options and allowing alternative molecular Jacobian methods to be compared.
+`jupiter_rt` is a **pure-Python** implementation of a thermal-infrared emission model and atmospheric-profile retrieval system for Jupiter, derived from several original Fortran programs. It supports retrievals of temperature, molecular abundances, grey, absorption-only aerosols, and selected trace species, while preserving legacy configuration options and allowing alternative molecular Jacobian methods to be compared. **LTE is assumed throughout the thermal-emission calculation. This version supports Jupiter only; no scattering, non-LTE physics, or other-planet models are implemented.**
 
 The general working range is **500–2000 cm⁻¹** (approximately 5–20 µm). The current implementation assumes **361 pressure levels** and has not been generalized to other vertical dimensions. Its internal spectral grid has a spacing of **0.001 cm⁻¹**, arranged in 10 cm⁻¹ blocks. Instrumental response is applied through Gaussian convolution using `resolution.txt`.
+
+Although the file loader accepts gas identifiers named by `.fuel`, this should **not** be interpreted as validated support for arbitrary new molecules: the historical Jupiter reference cases and explicitly implemented special pathways (HCN, CO₂, H₂O, C₆H₆) define the current intended molecular scope. Future species and planets will require new opacities, physical assumptions, and validation.
 
 The repository does **not** contain binary `.opa` opacity tables. These must be supplied separately at runtime. No Fortran compilation is required: the collision-induced absorption (CIA) routines have also been translated into Python.
 
@@ -53,7 +55,11 @@ Jupiter_RT_Python/
 ├── docs/
 │   ├── TECHNICAL_GUIDE.md
 │   ├── FILE_FORMATS.md
-│   └── VALIDATION.md
+│   ├── VALIDATION.md
+│   └── RELEASE_NOTES_0.4.7.md
+├── tests/
+├── README.md
+├── CHANGELOG.md
 └── pyproject.toml
 ```
 
@@ -253,7 +259,7 @@ Legacy vertical filters use hyperbolic-tangent masks centered near atmospheric l
 - `legacy_hcn`: multiply the first block's increment by `scale_hcn_delta` (default 0.1).
 - `legacy_h2o` and `none`: apply no additional mask in the current version's `apply_filters` function.
 
-The currently implemented transition width is **15 levels**. This has been retained in v0.4.4 for continuity with the scientific experiments; it should not be assumed to reproduce every historical Fortran filter exactly.
+The currently implemented transition width is **15 levels**. This has been retained in v0.4.7 for continuity with the scientific experiments; it should not be assumed to reproduce every historical Fortran filter exactly.
 
 ### Stopping criteria
 
@@ -280,14 +286,16 @@ The CLI also prints the **actual correlation length of each retrieved parameter*
 
 ## 8. Available presets
 
-Values defined by `cli.py` and `RetrievalOptions` in v0.4.4:
+Values defined by `cli.py` and `RetrievalOptions` in v0.4.7:
 
 | Preset | `gaussian_width` | Relevant correlation lengths | Filter | Stopping mode |
 |---|---:|---|---|---|
 | `temperature` | 1.000 | `c_T=0.75` | `none` | `fortran` |
 | `abundance` | 0.925 | `c_T=3`, `c_mol=3` | `legacy_abundance` | `fortran`, max. 20 |
 | `abundance_split` | 0.925 | `c_T=0.75`, `c_mol=3` | `legacy_abundance` | `fortran`, max. 20 |
-| `aerosol` | 1.000 | `c_aerosol=0.75` | `legacy_aerosol` | `combined` |
+| `aerosol` | 1.000 | `c_aerosol=0.75` | `none` | `fortran`, max. 100 |
+| `aerosol_cutoff` | 1.000 | `c_aerosol=0.75`; allowed indices 85–119 | `none` | `fortran`, max. 100 |
+| `aerosol_legacy` | 1.000 | `c_aerosol=0.75` | `legacy_aerosol` | `combined` |
 | `hcn` | 1.000 | `c_special=100` | `legacy_hcn` | `combined` |
 | `co2` | 1.200 | `c_special=100` | `legacy_co2` | `combined` |
 | `h2o` | 1.000 | `c_special=100` | `legacy_h2o` | `combined` |
@@ -321,7 +329,7 @@ A retrieval creates these files under the directory specified by `--output`:
 | `jupiter_ch4.inv` | Pressure, retrieved temperature, gas profiles, aerosols if active, and uncertainties; see its header. |
 | `jupiter_ch4.sum` | Final iteration, mean χ², and DOFS for each retrieved parameter. |
 | `jupiter_ch4.avg` | **1-based index of each averaging-kernel column's maximum** at each level; the full 361×361 matrix is not saved. |
-| `diagnostics.json` | Final χ², iteration count, parameters, correlation lengths, Jacobian method, and iteration history. |
+| `diagnostics.json` | Software version, preset, final χ², iteration count, aerosol cutoff settings, parameters, correlation lengths, Jacobian method, and iteration history. |
 
 `--forward-only` writes spectra and profiles without the complete retrieval diagnostics.
 
@@ -353,7 +361,39 @@ DOFS are traces of the averaging-kernel matrices. The peak locations in `jupiter
 - **C₆H₆:** the correct case runs and the modeled spectrum agrees very closely with Fortran; the vertical VMR differences are associated with different regularization settings. The current implementation is accepted for continued work, **without claiming identical retrieved profiles**.
 - **CO₂:** compared successfully against Fortran for the shared special-molecule retrieval path. The 28-point spectra and stratospheric VMR agree well, although the Fortran and Python runs use different regularization and observation-error scaling.
 - **HCN and H₂O:** not individually compared; a successful CO₂ test would not automatically verify their specific opacity tables, filters, or spectra.
-- **Aerosols:** the inherited treatment is preserved, but a fully documented end-to-end comparison remains outstanding.
+- **Grey aerosols:** v0.4.6 with levels 80–119 was compared end-to-end with Fortran (χ², spectra, profiles, and integrated optical depth). The two codes agree in peak level but are not identical in retrieved opacity; see `VALIDATION.md`. **The new 85–119 band in v0.4.7 has not yet been rerun with the large external `.opa` tables.**
 - **Jacobians:** `analytical` and `finite_difference` are internally consistent; full forward-model perturbation and comparison of complete averaging-kernel matrices are still pending.
 
 Numerical results, experimental conditions, and interpretation caveats appear in [VALIDATION.md](VALIDATION.md). Future reference runs should record code version, preset, `.fuel`, spectral grid, regularization, Jacobian, iteration count, and Fortran baseline to avoid comparing mismatched cases.
+
+
+### Fixed-zero aerosol altitude band (v0.4.7)
+
+The `--preset aerosol_cutoff` imposes zero aerosol optical depth at
+**zero-based atmospheric indices 0–84** (`taucloud[:85]`) and **120–360**
+(`taucloud[120:]`). Only **85–119** may contain retrieved grey aerosol
+optical depth. This is an index-based interval, **not a pressure-valued
+cutoff**; consult the case's `.pta` for the corresponding pressures.
+
+The settings are `aerosol_zero_below_index=85` and
+`aerosol_zero_from_index=120`. The restrictions apply to `taucloud`,
+aerosol Jacobian columns, retrieved increments, formal uncertainties,
+and averaging-kernel rows. They do not change molecular or temperature
+Jacobians and do not add pressure weighting to layer optical depths.
+
+The independent `ch4_hazes.txt` or `nh3_clouds.txt` vertical mask still
+multiplies the aerosol Jacobian. For the previously tested mask with
+active indices 109–129, its overlap with the new band is **109–119**.
+Regularized updates can spread into allowed indices 85–108, but cannot
+produce opacity outside 85–119.
+
+This is a **user-selected experimental restriction**, not an explicit
+Fortran hard cutoff. The Fortran code instead clipped negative optical
+depths to zero. `aerosol` and `aerosol_legacy` have not changed.
+`aerosol_cutoff` retains `filter_mode=none`, `c_aerosol=0.75`,
+`factor=3`, `max_iterations=100`, and Fortran-style stopping with
+`rtol_chi2=0.01`.
+
+The **80–119** band was validated against the particular historical
+reference case in v0.4.6; the **85–119** band requires its own scientific
+rerun before reporting updated χ² or integrated optical depths.

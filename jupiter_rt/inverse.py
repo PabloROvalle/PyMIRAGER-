@@ -24,6 +24,8 @@ class RetrievalOptions:
     c_molecule: float = 3.0
     c_special: float = 100.0
     c_aerosol: float = 0.75
+    aerosol_zero_from_index: int | None = None
+    aerosol_zero_below_index: int | None = None
     filter_mode: str = 'auto'
     alpha_floor: float = 1e-26
     scale_hcn_delta: float = 0.1
@@ -174,12 +176,43 @@ def run_retrieval(model, options=None, *, progress=None):
     if not params:
         spec = model.forward(with_jacobians=False)
         return RetrievalResult(spec, float(np.mean(((spec - case.observed) / case.error) ** 2)), 0, np.zeros((len(case.pressure), 0)), None, np.zeros(0))
+    # Optional fixed-zero altitude boundaries for aerosol retrievals. These are
+    # experimental constraints, not a physical truncation in the original Fortran.
+    aerosol_lower = options.aerosol_zero_below_index
+    aerosol_upper = options.aerosol_zero_from_index
+    aerosol_columns = [j for j, param in enumerate(params) if param.kind == 'aerosol']
+    aerosol_allowed = None
+    if aerosol_lower is not None or aerosol_upper is not None:
+        if not aerosol_columns:
+            raise ValueError('Aerosol cutoffs require an aerosol retrieval')
+        nlevel = len(case.pressure)
+        if aerosol_lower is not None:
+            if (isinstance(aerosol_lower, bool) or not isinstance(aerosol_lower, int)
+                    or not 0 <= aerosol_lower < nlevel):
+                raise ValueError('aerosol_zero_below_index must be an integer in [0, nlevel - 1]')
+        if aerosol_upper is not None:
+            if (isinstance(aerosol_upper, bool) or not isinstance(aerosol_upper, int)
+                    or not 1 <= aerosol_upper < nlevel):
+                raise ValueError('aerosol_zero_from_index must be an integer in [1, nlevel - 1]')
+        if aerosol_lower is not None and aerosol_upper is not None and aerosol_lower >= aerosol_upper:
+            raise ValueError('aerosol_zero_below_index must be smaller than aerosol_zero_from_index')
+        aerosol_allowed = np.ones(nlevel, dtype=bool)
+        if aerosol_lower is not None:
+            aerosol_allowed[:aerosol_lower] = False
+        if aerosol_upper is not None:
+            aerosol_allowed[aerosol_upper:] = False
+        case.taucloud[~aerosol_allowed] = 0.0
+
     chi_old = np.inf
     prev_step = np.inf
     hist = []
     last = None
     for iteration in range(options.max_iterations + 1):
         syn, kk = model.forward(with_jacobians=True)
+        if aerosol_allowed is not None:
+            # Fixed-zero aerosol levels have no sensitivity in the Jacobian.
+            for j in aerosol_columns:
+                kk[:, ~aerosol_allowed, j] = 0.0
         chi = float(np.mean(((syn - case.observed) / case.error) ** 2))
         if not np.isfinite(chi):
             raise FloatingPointError('Non-finite chi2')
@@ -187,6 +220,11 @@ def run_retrieval(model, options=None, *, progress=None):
             hist.append({'iteration': iteration, 'chi2_mean': chi, 'stopped': 'max_iterations'})
             break
         step = retrieval_step(case.pressure, kk, case.observed, syn, case.error, params, options)
+        if aerosol_allowed is not None:
+            for j in aerosol_columns:
+                step.delta[~aerosol_allowed, j] = 0.0
+                step.sigma[~aerosol_allowed, j] = 0.0
+                step.averaging[~aerosol_allowed, :, j] = 0.0
         abs_delta = float(np.max(np.abs(step.delta)))
         # Fractional chi-squared improvement relative to the previous iteration.
         # Positive values indicate a decrease in chi-squared; undefined at iter 0.
@@ -221,11 +259,20 @@ def run_retrieval(model, options=None, *, progress=None):
                 case.profiles[:, param.gas_index] *= np.exp(np.clip(incr, -80, 80))
             elif param.kind == 'aerosol':
                 case.taucloud[:] = np.maximum(0, case.taucloud + incr)
+                if aerosol_allowed is not None:
+                    case.taucloud[~aerosol_allowed] = 0.0
         if np.any(case.temperature <= 0):
             raise FloatingPointError('Retrieval generated T<=0 K; check step size and regularization')
     syn, k_final = model.forward(with_jacobians=True)
+    if aerosol_allowed is not None:
+        for j in aerosol_columns:
+            k_final[:, ~aerosol_allowed, j] = 0.0
     chi = float(np.mean(((syn - case.observed) / case.error) ** 2))
     final_diagnostics = retrieval_step(case.pressure, k_final, case.observed, syn, case.error, params, options)
+    if aerosol_allowed is not None:
+        for j in aerosol_columns:
+            final_diagnostics.sigma[~aerosol_allowed, j] = 0.0
+            final_diagnostics.averaging[~aerosol_allowed, :, j] = 0.0
     sigma = final_diagnostics.sigma
     A = final_diagnostics.averaging
     dof = final_diagnostics.dof

@@ -4,10 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jupiter-rt-retrieval"
-version = "0.4.4"
-description = "Jupiter thermal-IR radiative transfer and retrievals"
+version = "0.4.7"
+description = "PyMIRAGER: Jupiter LTE thermal-infrared radiative transfer and retrievals"
+readme = "README.md"
 requires-python = ">=3.10"
+keywords = ["Jupiter", "thermal infrared", "radiative transfer", "atmospheric retrieval", "LTE"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
 dependencies = ["numpy>=1.24", "scipy>=1.10"]
+
+[project.urls]
+Repository = "https://github.com/PabloROvalle/PyMIRAGER-"
+Documentation = "https://github.com/PabloROvalle/PyMIRAGER-/tree/main/docs"
 
 [project.scripts]
 jupiter-rt = "jupiter_rt.cli:main"
