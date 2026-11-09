@@ -49,7 +49,7 @@ PyMIRAGER is currently undergoing development, testing, and validation of its at
 **Successfully tested:**
 
 - **Temperature retrievals:** The retrieval of vertical atmospheric temperature profiles has been successfully tested, yielding very promising results.
-- **Acetylene (C₂H₂) retrievals:** The retrieval of acetylene abundances has also been successfully tested, demonstrating very good performance.
+- **Hydrocarbon (CxHy) retrievals:** The retrieval of acetylene abundances has also been successfully tested, demonstrating very good performance.
 
 **Ongoing development and validation:**
 
@@ -60,7 +60,7 @@ PyMIRAGER is currently undergoing development, testing, and validation of its at
 
 The retrieval methodologies and ongoing developments build upon the approaches presented in **Rodríguez-Ovalle et al. (2024a, 2024b, 2025)**.
 
-While temperature and C₂H₂ retrievals have already demonstrated promising performance, the remaining molecular and aerosol retrieval capabilities are still under evaluation.
+While temperature and CxHy retrievals have already demonstrated promising performance, the remaining molecular and aerosol retrieval capabilities are still under evaluation.
 
 ## Opacity Files and Availability
 
