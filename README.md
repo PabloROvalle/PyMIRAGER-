@@ -1,7 +1,7 @@
 <p align="center">
   <img src="assets/pymirager_logo.png"
        alt="PyMIRAGER logo"
-       width="320">
+       width="240">
 </p>
 
 # PyMIRAGER
